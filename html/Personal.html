@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+    <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Create Personal Account</h1>
+        <form id="loginForm">
+            <label for="citizen_number">Citizen identification number :</label>
+            <input type="text" id="citizen_number" name="citizen_number" required>
+            
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password1">Password:</label>
+            <input type="password" id="password1" name="password1" required>
+
+            <label for="password">Enter the Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <label for="verification">Verification codes:</label>
+            <input type="password" id="verification" name="verification" required>
+            
+            <button type="submit">Create Account</button>
+            
+        </form>
+        <button onclick="window.location.href='index.html'">Login</button>
+        <p id="message"></p>
+    </div>
+    <script src="../script/personal.js"></script>
+</body>
+</html>

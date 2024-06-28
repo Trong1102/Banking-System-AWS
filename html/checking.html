@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checking Customer infomation</title>
+    <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Checking Customer infomation</h1>
+        <form id="chekingform">
+            
+            <label for="citizen_number">Citizen identification number:</label>
+            <input type="number" id="citizen_number" name="citizen_number" required>
+            
+            <button type="submit">Check information</button>
+        </form>
+        <button onclick="window.location.href='register.html'">Register Infomation</button>
+        <button onclick="window.location.href='Personal.html'">Create Personal Account</button>
+        <button onclick="window.location.href='Business.html'">Create Business Account</button>
+        <button onclick="window.location.href='index.html'">Login</button>
+        <p id="message"></p>
+    </div>
+    <script src="../script/check_citizen.js"></script>
+</body>
+</html>

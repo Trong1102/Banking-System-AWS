@@ -7,17 +7,18 @@
     <link rel="stylesheet" href="../CSS/styles.css">
 </head>
 <body>
-    <div class="register-container">
+    <div class="login-container">
         <h1>Register Bank App</h1>
         <form id="registerForm">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
             
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+            <label for="name">Name: </label>
+            <input type="text" id="customer_name" name="customer_name" required>
             
-            <label for="age">Age:</label>
-            <input type="number" id="age" name="age" required>
+            <label for="citizen_number">Citizen identification number: </label>
+            <input type="number" id="citizen_number" name="citizen_number" required>
+            
+            <label for="date_of_birth">Date of Birth:</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" required>
             
             <label for="gender">Gender:</label>
             <select id="gender" name="gender" required>
@@ -26,14 +27,15 @@
                 <option value="other">Other</option>
             </select>
             
-            <label for="education">Education Level:</label>
-            <input type="text" id="education" name="education" required>
+            <label for="phone_number">Phone Number:</label>
+            <input type="number" id="phone_number" name="phone_number" required>
             
-            <label for="maritalStatus">Marital Status:</label>
-            <input type="text" id="maritalStatus" name="maritalStatus" required>
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" required>
             
             <button type="submit">Register</button>
         </form>
+        <button onclick="window.location.href='checking.html'">Create Account</button>
         <p id="message"></p>
     </div>
     <script src="../script/register.js"></script>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+    <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Create Business Account</h1>
+        <form id="loginForm">
+            <label for="citizen_number">Citizen identification number :</label>
+            <input type="text" id="citizen_number" name="citizen_number" required>
+            
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password1">Password:</label>
+            <input type="password" id="password1" name="password1" required>
+            
+            <label for="password">Enter the Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <label for="verification">Verification codes:</label>
+            <input type="password" id="verification" name="verification" required>
+
+            <label for="Location">Location Store:</label>
+            <input type="text" id="Location" name="Location" required>
+
+            <label for="Business_Name">Business Name:</label>
+            <input type="text" id="Business_Name" name="Business_Name" required>
+
+            <select id="business_type" name="business_type" required>
+                <option value="retail">Food and Drink</option>
+                <option value="finance">Fashion</option>
+                <option value="healthcare">HouseWare</option>
+                <option value="education">Technology</option>
+                <option value="toy_and_children">Toy and Children</option>
+                <option value="sport">Sport</option>
+                <option value="vehicle">Vehicle</option>
+                <option value="service">Service</option>
+                <option value="other">Other</option>
+            </select>
+            
+            <button type="submit">Submit</button>
+            
+        </form>
+        <button onclick="window.location.href='index.html'">Login</button>
+        <p id="message"></p>
+    </div>
+    <script src="../script/business.js"></script>
+</body>
+</html>

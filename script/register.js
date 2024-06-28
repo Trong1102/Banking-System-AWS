@@ -1,26 +1,28 @@
 document.getElementById('registerForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const age = document.getElementById('age').value;
+    const customer_name = document.getElementById('customer_name').value;
+    const citizen_number = document.getElementById('citizen_number').value;
+    const date_of_birth = document.getElementById('date_of_birth').value;
     const gender = document.getElementById('gender').value;
-    const education = document.getElementById('education').value;
-    const maritalStatus = document.getElementById('maritalStatus').value;
+    const phone_number = document.getElementById('phone_number').value;
+    const email = document.getElementById('email').value;
     
-    fetch('YOUR_API_REGISTER_URL', {
+    const data = {
+        customer_name: customer_name,
+        citizen_number: citizen_number,
+        date_of_birth: date_of_birth,
+        gender: gender,
+        phone_number: phone_number,
+        email: email
+    };
+
+    fetch('https://encrz0mjri.execute-api.ap-southeast-1.amazonaws.com/dev/create/customer', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            username: username,
-            password: password,
-            age: age,
-            gender: gender,
-            education: education,
-            maritalStatus: maritalStatus
-        })
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
@@ -37,7 +39,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     })
     .catch((error) => {
         console.error('Error:', error);
-        document.getElementById('message').textContent = 'An error occurred. Please try again.';
+        document.getElementById('message').textContent = 'An error occurred.';
         document.getElementById('message').style.color = 'red';
     });
 });

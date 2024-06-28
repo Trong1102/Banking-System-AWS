@@ -20,7 +20,8 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     .then(data => {
         if (data.statusCode === 200) {
             const userData = JSON.parse(data.data);
-            localStorage.setItem('user_id', userData.user_id);
+            localStorage.setItem('account_id', userData.account_id);
+            console.log('acc_id:', userData.account_id);
             window.location.href = 'dashboard.html';
         } else {
             document.getElementById('message').textContent = JSON.parse(data.data).message;
@@ -30,10 +31,4 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         console.error('Error:', error);
         document.getElementById('message').textContent = 'An error occurred. Please try again.';
     });
-});
-
-
-document.getElementById('h1').addEventListener('regis', function(e){
-    e.preventDefault();
-    window.location.href = 'dashboard.html'
 });
