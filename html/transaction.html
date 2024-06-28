@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Page</title>
+    <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Transaction Page</h1>
+        <form id="transactionForm">
+            
+            <label for="recipient_number">To Account:</label>
+            <input type="text" id="recipient_number" name="recipient_number" required>
+
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" name="amount" required>
+            
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description">
+
+            <label for="verification">Verify Code:</label>
+            <input type="number" id="verification" name="verification" required>
+
+            <button type="submit">Submit</button>
+        </form>
+
+        <button id="logoutButton" onclick="window.location.href='index.html'">Logout</button>
+        <button onclick="window.location.href='dashboard.html'">Back to dashboard</button>
+
+        <p id="message"></p>
+    </div>
+    <script src="../script/transaction.js"></script>
+</body>
+</html>

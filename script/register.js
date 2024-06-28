@@ -29,6 +29,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         if (data.statusCode === 200) {
             document.getElementById('message').textContent = 'Registration successful!';
             document.getElementById('message').style.color = 'green';
+            alert('Registration successful!');
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 2000);
