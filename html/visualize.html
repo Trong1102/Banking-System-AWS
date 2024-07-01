@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Information</title>
+    <!-- Link các thư viện cần thiết -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../CSS/visualize.css">
+</head>
+<body>
+    <h1>User Information</h1>
+    <div class="chart-wrapper">
+        <div id="chart-wrapper">
+            <div id="columnContainer">
+                <canvas id="columnCanvas"></canvas>
+            </div>
+            <div id="pieContainer">
+                <canvas id="pieCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="table-container">
+        <h2>Recent Transactions</h2>
+        <table id="transactionTable" border="1">
+            <thead>
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added here dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="../script/visualize.js"></script>
+</body>
+</html>

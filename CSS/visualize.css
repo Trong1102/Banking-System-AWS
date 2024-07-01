@@ -1,0 +1,26 @@
+#chart-wrapper {
+    display: flex;
+    justify-content: space-between; /* Đặt khoảng cách đều giữa các biểu đồ */
+    align-items: center; /* Canh giữa các biểu đồ theo chiều dọc */
+    gap: 20px; /* Khoảng cách giữa các biểu đồ */
+}
+#columnContainer {
+    width: 800px; /* Đặt chiều rộng cố định cho mỗi biểu đồ */
+    height: 400px; /* Đặt chiều cao cố định cho mỗi biểu đồ */
+    border: 5px solid #d7d7d7; /* Viền cho container chứa biểu đồ */
+    box-shadow: 0 4px 8px rgba(114, 105, 105, 0.1); /* Đổ bóng cho container chứa biểu đồ */
+}
+#pieContainer{
+    width: 700px; /* Đặt chiều rộng cố định cho mỗi biểu đồ */
+    height: 400px; /* Đặt chiều cao cố định cho mỗi biểu đồ */
+    border: 5px solid #c6c6c6; /* Viền cho container chứa biểu đồ */
+    box-shadow: 0 4px 8px rgba(114, 105, 105, 0.1); /* Đổ bóng cho container chứa biểu đồ */
+}
+#columnCanvas {
+    width: auto;
+    height: auto;
+}
+#pieCanvas{
+    width: auto;
+    height: 400px;
+}

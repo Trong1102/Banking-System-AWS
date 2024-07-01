@@ -4,6 +4,7 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     // Lấy giá trị từ các trường input
     const citizen_number = document.getElementById('citizen_number').value;
     const username = document.getElementById('username').value;
+    const checkpass = document.getElementById('password1').value;
     const password = document.getElementById('password').value;
     const verification = document.getElementById('verification').value;
     const location = document.getElementById('Location').value;
