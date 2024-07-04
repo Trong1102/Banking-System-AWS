@@ -1,0 +1,782 @@
+Source code lambda 04/07//2024
+
+1.login-web-app
+import json
+import pymysql
+import datetime 
+
+def lambda_handler(event, context):
+    # Lấy thông tin người dùng từ yêu cầu
+    username = event.get('username')
+    password = event.get('password')
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        sql = f"select Account_id, Username, Password from bank_sys.User_Accounts"
+        
+        
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        login_success = False
+        account_id = None
+        
+        for row in result:
+            if username == row[1] and password == row[2]:
+                login_success = True
+                account_id = row[0]
+                break
+        
+        status = 'success' if login_success else 'failed'
+        error_message = '' if login_success else 'Invalid username or password'
+        
+        log_sql = """
+        INSERT INTO bank_sys.Login_Log (Customer_id, Username, password, status, Error_message)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(log_sql, (account_id, username, password, status, error_message))
+        connection.commit()
+        
+        if login_success:
+            return {
+                'statusCode': 200,
+                'data': json.dumps({'message': 'Login successful','account_id':account_id})
+            }
+        return {
+            'statusCode': 401,
+            'data': json.dumps({'message': 'Invalid username or password'})
+        }
+        cursor.close()
+        connection.close()
+    except Exception as e:
+        print('MySQL Exception:', str(e))
+        raise
+2. get-user-data
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    account_id = event.get('account_id')
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        if account_id[0:2] == 'BA':
+            sql = f"""select a.Business_Name , a.Account_number , a.Location ,a.balance, c.phone_number 
+                        from bank_sys.Business_Accounts a
+                        join bank_sys.Customers c on a.Customer_id = c.Customer_ID
+                        where a.Account_id = %s"""
+            cursor.execute(sql, (account_id,))
+            row = cursor.fetchone()
+            balance = float(row[3])
+            if row:
+                response = {
+                    'statusCode': 200,
+                    'data': json.dumps({
+                        'business_name': row[0],
+                        'account_number': row[1],
+                        'location':row[2],
+                        'balance': balance,
+                        'phone_number':row[4]
+                    })
+                }
+            else:
+                response = {
+                    'statusCode': 404,
+                    'body': json.dumps({'message': 'User not found'})
+                }
+        if account_id[0:2] == 'PA':
+            sql = f"""select c.customer_name , a.Account_number ,a.balance, c.phone_number 
+                        from bank_sys.Personal_Accounts a
+                        join bank_sys.Customers c on a.Customer_id = c.Customer_ID
+                        where a.Account_id = %s"""
+            cursor.execute(sql, (account_id,))
+            row = cursor.fetchone()
+            balance = float(row[2])
+            if row:
+                response = {
+                    'statusCode': 200,
+                    'data': json.dumps({
+                        'customer_name': row[0],
+                        'account_number': row[1],
+                        'balance': balance,
+                        'phone_number':row[3]
+                    })
+                }
+            else:
+                response = {
+                    'statusCode': 404,
+                    'body': json.dumps({'message': 'User not found'})
+                }
+    except Exception as e:
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        connection.close()
+    
+    return response
+3.check-citizen
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    
+    citizen_number = event.get('citizen_number')
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Check if username already exists
+        cursor.execute("SELECT COUNT(*) FROM bank_sys.Customers WHERE citizen_number = %s", (citizen_number,))
+        if cursor.fetchone()[0] > 0:
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'Customer already exists in system, let create an account.'})
+            }
+        
+        response = {
+            'statusCode': 300,
+            'body': json.dumps({'message': 'Profile customer not exist in system, please register before create account'})
+        }
+        
+    except Exception as e:
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return response
+4.column-chart
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    
+    account_id = event.get('Account_id')
+    # Database connection details
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        # Connect to MySQL database
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Extract data from raw schema table
+        
+        query = """
+                select month, sum(Amount)
+                from report_bank.spending_money t
+                left join bank_sys.User_Accounts a on t.Account_number = a.Account_number
+                where year(NOW()) = year and a.Account_id = %s
+                group by month
+                order by month  
+        """
+        cursor.execute(query, (account_id,))
+        result = cursor.fetchall()
+        
+        transactions = []
+        for row in result:
+            transactions.append({
+                'month': row[0],
+                'amount': int(row[1])
+            })
+        print(transactions)
+        response = {
+            'statusCode': 200,
+            'body': json.dumps(transactions)
+        }
+        
+    except Exception as e:
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        connection.close()
+    
+    return response
+
+5.speding-money-report
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    # Database connection details
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        # Connect to MySQL database
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Extract data from raw schema table
+        
+        cursor.execute(f""" select year(t.Transaction_date) as year, month(t.Transaction_date) as month,t.Account_number , Business_Type,  sum(t.Amount)
+                            from bank_sys.Transactions t
+                            join bank_sys.Business_Accounts b on t.recipient_number = b.Account_number
+                            group by year(t.Transaction_date), month(t.Transaction_date),t.Account_number,Business_Type  """)
+        raw_data = cursor.fetchall()
+        
+        # Transform data as needed
+        transformed_data = []
+        for row in raw_data:
+            # Example transformation: adding a new field based on existing data
+            transformed_row = list(row)
+            # transformed_row.append(row[1])
+            transformed_data.append(tuple(transformed_row))
+        # print(transformed_data)
+        
+        truncate_query = "TRUNCATE TABLE report_bank.spending_money;"
+        cursor.execute(truncate_query)
+        connection.commit()
+
+        # Load data into report schema table
+        report_table = f"report_bank.spending_money"
+        report_query = f"""
+        INSERT INTO {report_table} (year,month,Account_number, Business_Type, Amount)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.executemany(report_query, transformed_data)
+        
+        # Commit the transaction
+        connection.commit()
+        connection.close()
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'ETL process completed successfully'})
+        }
+
+    except Exception as e:
+        # connection.rollback()
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    # finally:
+    #     connection.close()
+    
+    return response
+
+6.report-account-bank
+
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Tạo bảng nếu chưa tồn tại
+        
+        
+        # Xóa dữ liệu cũ trong bảng mới tạo
+        cursor.execute("TRUNCATE TABLE report_bank.account_bank;")
+        
+        # Thêm dữ liệu từ truy vấn CTE vào bảng mới tạo
+        insert_data_query = """
+        INSERT INTO report_bank.account_bank (Account_id, Account_type, create_at)
+        SELECT * FROM (
+            SELECT A.Account_id AS Account_id, Account_type, create_at 
+            FROM bank_sys.User_Accounts A
+            JOIN bank_sys.Personal_Accounts P ON P.Account_id = A.Account_id
+            UNION ALL 
+            SELECT A.Account_id AS Account_id, Account_type, create_at 
+            FROM bank_sys.User_Accounts A
+            JOIN bank_sys.Business_Accounts B ON B.Account_id = A.Account_id
+        ) AS CTE;
+        """
+        cursor.execute(insert_data_query)
+        
+        # Commit thay đổi
+        connection.commit()
+        
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Table created and updated successfully'})
+        }
+        
+    except Exception as e:
+        # Rollback thay đổi nếu có lỗi
+        connection.rollback()
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        connection.close()
+    
+    return response
+
+7.create-business-account
+
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    # Kết nối tới cơ sở dữ liệu
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+
+    # Lấy thông tin từ body của request
+    # body = json.loads(event['body'])
+    citizen_number = event.get('citizen_number')
+    username = event.get('username')
+    password = event.get('password')
+    verification = event.get('verification')
+    location = event.get('location')
+    business_name = event.get('business_name')
+    business_type = event.get('business_type')  
+    
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        sql_select = "SELECT customer_id FROM bank_sys.Customers WHERE citizen_number = %s"
+        cursor.execute(sql_select, (citizen_number,))
+        result = cursor.fetchone()
+        if not result:
+            return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'citizen number not exist in system'})
+        }
+        customer_id = result[0]
+        
+        sql_check = f"select Username from bank_sys.User_Accounts"
+        cursor.execute(sql_check)
+        result = cursor.fetchall()
+        
+        for row in result:
+            if username == row[0]:
+                return {
+                    'statusCode': 500,
+                    'body': json.dumps({'message': 'Username already exist please choose another username'})
+                }
+        # Tạo câu lệnh SQL
+        sql = """
+        INSERT INTO bank_sys.Business_Accounts (customer_id, username, password, verification, location, business_name, Business_Type)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql, (customer_id, username, password, verification, location, business_name, business_type))
+        connection.commit()
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Account created successfully'})
+        }
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Error creating account', 'error': str(e)})
+        }
+    finally:
+        connection.close()
+
+    return response
+
+8.transaction
+
+import json
+import pymysql
+import boto3
+
+
+def lambda_handler(event, context):
+    
+    account_id = event.get('account_id')
+    recipient_number = event.get('recipient_number')
+    amount = event.get('amount')
+    description = event.get('description')
+    verification = event.get('verification')
+    
+    amount = float(amount)
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        connection.begin()
+        cursor.execute("""with source as(
+                            	select Account_id, Account_number, balance, verification
+                            	from bank_sys.Business_Accounts
+                            	union all 
+                            	select Account_id, Account_number, balance, verification
+                            	from bank_sys.Personal_Accounts)
+                            select balance, account_number, verification from source where Account_id =%s""", (account_id,))
+        from_account = cursor.fetchone()
+        
+        #kiểm tra số dư so với số tiền chuyển 
+        if not from_account or float(from_account[0]) < amount:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'Insufficient funds or invalid from account'})
+            }
+        account_number = from_account[1]
+        verification_true = from_account[2]
+        
+        if verification_true != verification:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'verification code not true'})
+            }
+        
+        #Add amount to to_account
+        cursor.execute("""with source as(
+                        	select Account_id, Account_number, balance
+                        	from bank_sys.Business_Accounts
+                        	union all 
+                        	select Account_id, Account_number, balance
+                        	from bank_sys.Personal_Accounts)
+                        select Account_id,balance from source where Account_number = %s""", (recipient_number,))
+        to_account = cursor.fetchone()
+        if not to_account:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'Invalid to account'})
+            }
+        recipient_id = to_account[0]
+        #Deduct amount from from_account
+        new_from_balance = float(from_account[0]) - amount
+        transaction_type = ''
+        if account_id[0:2] == 'BA':
+            cursor.execute("UPDATE bank_sys.Business_Accounts SET balance = %s WHERE Account_id = %s", (new_from_balance, account_id))
+            if recipient_id[0:2] == 'BA':
+                transaction_type = 'b2b'
+            else:
+                transaction_type = 'b2c'
+        else:
+            cursor.execute("UPDATE bank_sys.Personal_Accounts SET balance = %s WHERE account_id = %s", (new_from_balance, account_id))
+            if recipient_id[0:2] == 'BA':
+                transaction_type = 'c2b'
+            else:
+                transaction_type = 'c2c'
+        
+        
+        new_to_balance = float(to_account[1]) + amount
+        if recipient_id[0:2] == 'BA':
+            cursor.execute("UPDATE bank_sys.Business_Accounts SET balance = %s WHERE account_id = %s", (new_to_balance, recipient_id))
+        else:
+            cursor.execute("UPDATE bank_sys.Personal_Accounts SET balance = %s WHERE account_id = %s", (new_to_balance, recipient_id))
+        
+        
+        #Ghi log
+                
+        cursor.execute("INSERT INTO bank_sys.Transactions (Account_number, amount, recipient_number, description, transaction_type) VALUES (%s, %s, %s, %s, %s)", 
+                       (account_number, amount, recipient_number, description, transaction_type))
+        connection.commit()
+        
+        #update report
+        client = boto3.client('lambda')
+        etl_payload = {
+            "none":"none"
+        }
+        
+        response = client.invoke(
+            FunctionName='spending_money_report',
+            InvocationType='Event',
+            Payload=json.dumps(etl_payload)
+        )
+        
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Transaction success'})
+        }
+        
+    except Exception as e:
+        connection.rollback()
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        connection.close()
+    
+    return response
+
+9. get-transaction-history
+
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    
+    account_id = event.get('Account_id')
+    # Database connection details
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        # Connect to MySQL database
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Extract data from raw schema table
+        
+        query = """
+                select Transaction_date, t.Account_number, Amount, recipient_number, Description 
+                from bank_sys.Transactions t
+                left join bank_sys.User_Accounts a on t.Account_number = a.Account_number or t.recipient_number = a.Account_number
+                where a.Account_id = %s
+                order by Transaction_date desc
+        """
+        cursor.execute(query, (account_id,))
+        result = cursor.fetchall()
+        
+        transactions = []
+        for row in result:
+            transactions.append({
+                'Transaction_date': str(row[0]),
+                'Account_number': row[1],
+                'Amount':int(row[2]),
+                'recipient_number':row[3],
+                'description':row[4]
+,            })
+        print(transactions)
+        response = {
+            'statusCode': 200,
+            'body': json.dumps(transactions)
+        }
+        
+    except Exception as e:
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        connection.close()
+    
+    return response
+
+10. register
+
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    
+    # username = event.get('username')
+    # password = event.get('password')
+    # age = event.get('age')
+    # education = event.get('education')
+    # marital_status = event.get('maritalStatus')
+    
+    customer_name = event.get('customer_name')
+    citizen_number = event.get('citizen_number')
+    phone_number = event.get('phone_number')
+    date_of_birth = event.get('date_of_birth')
+    gender = event.get('gender')
+    email = event.get('email')
+    
+    
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Check if username already exists
+        cursor.execute("SELECT COUNT(*) FROM bank_sys.Customers WHERE citizen_number = %s", (citizen_number,))
+        if cursor.fetchone()[0] > 0:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'Customer already exists in system'})
+            }
+        
+        # Insert new user
+        sql = """
+            INSERT INTO bank_sys.Customers (customer_name, citizen_number, phone_number, date_of_birth, gender, email)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql, (customer_name, citizen_number, phone_number, date_of_birth, gender, email))
+        connection.commit()
+        
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Registration successful'})
+        }
+        
+    except Exception as e:
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return response
+
+11.create_personal_account
+
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    # Kết nối tới cơ sở dữ liệu
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+
+    # Lấy thông tin từ body của request
+    # body = json.loads(event['body'])
+    citizen_number = event.get('citizen_number')
+    username = event.get('username')
+    password = event.get('password')
+    verification = event.get('verification')
+    # location = event.get('location')
+    # business_name = event.get('business_name')
+    # business_type = event.get('business_type')  
+    
+    
+    try:
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        sql_select = "SELECT customer_id FROM bank_sys.Customers WHERE citizen_number = %s"
+        cursor.execute(sql_select, (citizen_number,))
+        result = cursor.fetchone()
+        
+        if not result:
+            return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'citizen number not exist in system'})
+        }
+        customer_id = result[0]
+        sql_check = f"select Username from bank_sys.User_Accounts"
+        cursor.execute(sql_check)
+        result = cursor.fetchall()
+        
+        for row in result:
+            if username == row[0]:
+                return {
+                    'statusCode': 500,
+                    'body': json.dumps({'message': 'Username already exist please choose another username'})
+                }
+        
+        # Tạo câu lệnh SQL
+        sql = """
+        INSERT INTO bank_sys.Personal_Accounts (customer_id, username, password, verification)
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(sql, (customer_id, username, password, verification))
+        connection.commit()
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Account created successfully'})
+        }
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Error creating account', 'error': str(e)})
+        }
+    finally:
+        connection.close()
+
+    return response
+
+12. pie-chart
+
+import json
+import pymysql
+
+def lambda_handler(event, context):
+    
+    account_id = event.get('Account_id')
+    # Database connection details
+    
+    host = "mydata.clcgakosy2ph.ap-southeast-1.rds.amazonaws.com"
+    user = "trongnt"
+    password_db = "trong1011"
+    dbname = "test"
+    
+    try:
+        # Connect to MySQL database
+        connection = pymysql.connect(host=host, user=user, password=password_db, db=dbname)
+        cursor = connection.cursor()
+        
+        # Extract data from raw schema table
+        
+        query = """
+                select Business_type, sum(Amount) as Amount
+                    from report_bank.spending_money t
+                    left join bank_sys.User_Accounts a on t.Account_number = a.Account_number
+                    where year(NOW()) = year and a.Account_id = %s
+                    group by Business_type
+        """
+        cursor.execute(query, (account_id,))
+        result = cursor.fetchall()
+        
+        transactions = []
+        for row in result:
+            transactions.append({
+                'type': row[0],
+                'amount': int(row[1])
+            })
+        print(transactions)
+        response = {
+            'statusCode': 200,
+            'body': json.dumps(transactions)
+        }
+        
+    except Exception as e:
+        response = {
+            'statusCode': 500,
+            'body': json.dumps({'message': str(e)})
+        }
+    finally:
+        connection.close()
+    
+    return response
