@@ -41,10 +41,28 @@ document.addEventListener('DOMContentLoaded', function() {
             throw error;
         });
     }
+    function fetchAnotherTableData() {
+        return fetch('https://encrz0mjri.execute-api.ap-southeast-1.amazonaws.com/dev/chart/history_txn', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ Account_id: account_id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Another Table Data:', data);
+            return JSON.parse(data.body);
+        })
+        .catch(error => {
+            console.error('Error fetching another table data:', error);
+            throw error;
+        });
+    }
 
     // Gọi cả hai hàm và xử lý dữ liệu khi cả hai API đều đã hoàn thành
-    Promise.all([fetchColumnChartData(), fetchPieChartData()])
-    .then(([columnData, pieData]) => {
+    Promise.all([fetchColumnChartData(), fetchPieChartData(),fetchAnotherTableData()])
+    .then(([columnData, pieData,anotherTableData]) => {
         // Vẽ biểu đồ cột
         const columnMonths = columnData.map(item => item.month);
         const columnAmounts = columnData.map(item => item.amount);
@@ -54,6 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const pieLabels = pieData.map(item => item.type);
         const pieAmounts = pieData.map(item => item.amount);
         drawPieChart(pieLabels, pieAmounts);
+
+        fillAnotherTable(anotherTableData);
     })
     .catch(error => {
         console.error('Error in fetching data:', error);
@@ -116,17 +136,16 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 scales: {
-
                     x: {
                         display: false,
                         grid: {
-                            display: false // Tắt lưới trên trục x
+                            display: false
                         }
                     },
                     y: {
                         display: false,
                         grid: {
-                            display: false // Tắt lưới trên trục y
+                            display: false
                         },
                         beginAtZero: true
                     }
@@ -139,6 +158,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
+        });
+    }
+    function fillAnotherTable(data) {
+        const tableBody = document.getElementById('anotherTable').querySelector('tbody');
+        tableBody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.Transaction_date}</td>
+                <td>${row.Account_number}</td>
+                <td>${row.Amount}</td>
+                <td>${row.recipient_number}</td>
+                <td>${row.description}</td>
+            `;
+            tableBody.appendChild(tr);
         });
     }
 });

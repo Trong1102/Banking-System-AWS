@@ -1,0 +1,218 @@
+-- Tạo bảng customers
+CREATE TABLE bank_sys.Customers (
+    Customer_ID CHAR(4) PRIMARY KEY,
+    citizen_number CHAR(12) NOT NULL,
+    customer_name VARCHAR(255) NOT NULL,
+    phone_number CHAR(10),
+    date_of_birth DATE,
+    gender ENUM('Male', 'Female', 'Other'),
+    email VARCHAR(255),
+    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Auto gen customer_ID
+CREATE TRIGGER bank_sys.before_insert_customers
+BEFORE INSERT ON Customers
+FOR EACH ROW
+BEGIN
+    DECLARE last_id INT DEFAULT 0;
+    DECLARE new_id CHAR(4);
+    
+    -- Lấy giá trị số lớn nhất từ Customer_ID hiện tại
+    SELECT IFNULL(MAX(CAST(SUBSTRING(Customer_ID, 4, 1) AS UNSIGNED)), 0) INTO last_id FROM Customers;
+    
+    -- Tăng giá trị đó lên 1
+    SET last_id = last_id + 1;
+    
+    -- Tạo Customer_ID mới với định dạng xxxx
+    SET new_id = LPAD(last_id, 4, '0');
+    
+    -- Gán Customer_ID mới cho dòng chèn vào
+    SET NEW.Customer_ID = new_id;
+END;
+
+-- Tạo bảng accounts 
+CREATE TABLE bank_sys.Accounts (
+    Account_id VARCHAR(10) PRIMARY KEY,
+    Customer_id CHAR(4) NOT NULL,
+    Account_number CHAR(8),
+    username VARCHAR(255),
+    password VARCHAR(255),
+    balance DECIMAL(15, 2) DEFAULT 0,
+    verification CHAR(6) NOT NULL,
+    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (Customer_id) REFERENCES Customers(Customer_ID)
+);
+
+-- Auto gen account_id
+CREATE TRIGGER bank_sys.before_insert_accounts
+BEFORE INSERT ON Accounts
+FOR EACH ROW
+BEGIN
+    DECLARE last_id INT DEFAULT 0;
+    DECLARE new_account_id VARCHAR(10);
+    DECLARE new_account_number CHAR(8);
+    
+    -- Lấy giá trị số lớn nhất từ Account_id hiện tại
+    SELECT IFNULL(MAX(CAST(SUBSTRING(Account_id, 3, 8) AS UNSIGNED)), 0) INTO last_id FROM Accounts;
+    
+    -- Tăng giá trị đó lên 1
+    SET last_id = last_id + 1;
+    
+    -- Tạo Account_id mới với định dạng PS+xxxxxxxx
+    SET new_account_id = CONCAT('PA', LPAD(last_id, 8, '0'));
+    
+    -- Tạo Account_number mới với 8 chữ số
+    SET new_account_number = LPAD(last_id, 8, '0');
+    
+    -- Gán Account_id và Account_number mới cho dòng chèn vào
+    SET NEW.Account_id = new_account_id;
+    SET NEW.Account_number = new_account_number;
+END;
+
+-- Tạo bảng Business_Accounts
+CREATE TABLE bank_sys.Business_Accounts (
+    Account_id VARCHAR(10) PRIMARY KEY,
+    Customer_id CHAR(4) NOt NULL,
+    Location VARCHAR(255),
+    Business_Name VARCHAR(255),
+    Business_Type VARCHAR(255),
+    Account_number CHAR(8) UNIQUE,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    balance DECIMAL(15, 2) DEFAULT 0,
+    verification CHAR(6) NOT NULL,
+    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (Customer_id) REFERENCES Customers(Customer_ID)
+);
+
+-- Tạo trigger để tự động sinh Account_id và Account_number
+
+CREATE TRIGGER bank_sys.before_insert_business_accounts
+BEFORE INSERT ON Business_Accounts
+FOR EACH ROW
+BEGIN
+    DECLARE last_id INT DEFAULT 0;
+    DECLARE new_account_id VARCHAR(10);
+    DECLARE new_account_number CHAR(8);
+    DECLARE max_id_accounts INT;
+    DECLARE max_id_business_accounts INT;
+
+    -- Lấy giá trị số lớn nhất từ Account_id hiện tại trong Business_Accounts
+    SELECT IFNULL(MAX(CAST(SUBSTRING(Account_id, 3, 8) AS UNSIGNED)), 0) INTO max_id_business_accounts FROM Business_Accounts;
+    
+    -- Lấy giá trị số lớn nhất từ Account_id hiện tại trong Accounts
+    SELECT IFNULL(MAX(CAST(SUBSTRING(Account_id, 3, 8) AS UNSIGNED)), 0) INTO max_id_accounts FROM Accounts;
+    
+    -- Chọn giá trị lớn hơn giữa hai bảng
+    SET last_id = GREATEST(max_id_accounts, max_id_business_accounts) + 1;
+    
+    -- Tạo Account_id mới với định dạng BS+xxxxxxxx
+    SET new_account_id = CONCAT('BA', LPAD(last_id, 8, '0'));
+    
+    -- Tạo Account_number mới với 8 chữ số
+    SET new_account_number = LPAD(last_id, 8, '0');
+    
+    -- Gán Account_id và Account_number mới cho dòng chèn vào
+    SET NEW.Account_id = new_account_id;
+    SET NEW.Account_number = new_account_number;
+END;
+
+
+CREATE TABLE bank_sys.Transactions (
+    Transaction_id VARCHAR(8) PRIMARY KEY,
+    Transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Account_number CHAR(8),
+    Amount BIGINT,
+    recipient_number CHAR(8),
+    Transaction_type VARCHAR(255),
+    Description VARCHAR(255)
+);
+
+CREATE TABLE bank_sys.Login_Log (
+    Log_id INT AUTO_INCREMENT PRIMARY KEY,
+    Customer_id CHAR(4),
+    Username VARCHAR(255),
+    password VARCHAR(255),
+    Login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Status VARCHAR(20),
+    Error_message VARCHAR(255)
+);
+
+
+
+CREATE TABLE bank_sys.User_Accounts (
+    Account_id VARCHAR(10) PRIMARY KEY,
+    Username VARCHAR(255) UNIQUE,
+    Password VARCHAR(255),
+    Account_number CHAR(8) UNIQUE,
+    balance BIGINT DEFAULT 0,
+    Account_type ENUM('personal', 'business')
+);
+
+-- insert Account to user_Account 
+
+CREATE TRIGGER after_insert_accounts
+AFTER INSERT ON bank_sys.Accounts
+FOR EACH ROW
+BEGIN
+    INSERT INTO bank_sys.User_Accounts (Account_id, Username, Password, Account_number, balance, Account_type)
+    VALUES (NEW.Account_id, NEW.Username, NEW.Password, NEW.Account_number, NEW.balance, 'personal')
+    ON DUPLICATE KEY UPDATE
+        Username = VALUES(Username),
+        Password = VALUES(Password),
+        Account_number = VALUES(Account_number),
+        balance = VALUES(balance);
+END;
+
+-- insert Business Account to user Account
+
+CREATE TRIGGER after_insert_business_accounts
+AFTER INSERT ON bank_sys.Business_Accounts
+FOR EACH ROW
+BEGIN
+    INSERT INTO bank_sys.User_Accounts (Account_id, Username, Password, Account_number, balance, Account_type)
+    VALUES (NEW.Account_id, NEW.Username, NEW.Password, NEW.Account_number, NEW.balance, 'business')
+    ON DUPLICATE KEY UPDATE
+        Username = VALUES(Username),
+        Password = VALUES(Password),
+        Account_number = VALUES(Account_number),
+        balance = VALUES(balance);
+END;
+
+
+CREATE TRIGGER before_insert_transactions
+BEFORE INSERT ON bank_sys.Transactions
+FOR EACH ROW
+BEGIN
+    SET NEW.transaction_id = CONCAT('TXN', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s'), LPAD(FLOOR(RAND() * 1000000), 6, '0'));
+END;
+
+
+CREATE TABLE report_bank.spending_money (
+    year INT,
+    month INT,
+    Account_number VARCHAR(255),
+    Transaction_type VARCHAR(50),
+    Amount DECIMAL(10, 2),
+    Business_Type VARCHAR(100),
+    count INT
+);
+
+CREATE TABLE report_bank.account_bank AS
+with cte as (
+	select  A.Account_id as Account_id, Account_type, create_at 
+	from bank_sys.User_Accounts A
+	join bank_sys.Personal_Accounts P where P.Account_id = A.Account_id
+	union all 
+	select A.Account_id as Account_id, Account_type, create_at 
+	from bank_sys.User_Accounts A
+	join bank_sys.Business_Accounts B where B.Account_id = A.Account_id
+)
+select * from cte
+
+
+
+
+
+

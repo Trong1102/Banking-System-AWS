@@ -42,9 +42,14 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Success:', data);
-        document.getElementById('message').textContent = 'Account created successfully';
-        document.getElementById('message').style.color = 'green';
+        console.log('status:', data.statusCode);
+        document.getElementById('message').textContent = JSON.parse(data.body).message;
+        if(data.statusCode === 200){
+            document.getElementById('message').style.color = 'green';
+        }else {
+            document.getElementById('message').style.color = 'red';
+        }
+            
     })
     .catch(error => {
         console.error('Error:', error);

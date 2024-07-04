@@ -33,7 +33,11 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
     .then(data => {
         console.log('Success:', data);
         document.getElementById('message').textContent = JSON.parse(data.body).message;
-        document.getElementById('message').style.color = 'green';
+        if(data.statusCode === 200){
+            document.getElementById('message').style.color = 'green';
+        }else {
+            document.getElementById('message').style.color = 'red';
+        }x
     })
     .catch(error => {
         console.error('Error:', error);
